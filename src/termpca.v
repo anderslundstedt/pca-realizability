@@ -171,8 +171,10 @@ Module TERM_PCA.
 
   Definition normalTerm := {t : term | Normal t}.
 
-  Local Coercion normalTermsToTerms (t : normalTerm) : term :=
+  Definition normalTermsToTerms (t : normalTerm) : term :=
     let (t, _) := t in t.
+
+  Local Coercion normalTermsToTerms : normalTerm >-> term.
 
   Definition NormalTermEq (u v : normalTerm) := (u : term) = (v : term).
 

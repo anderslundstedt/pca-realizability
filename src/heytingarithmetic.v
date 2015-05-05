@@ -1,9 +1,10 @@
-Require Coq.omega.Omega.
+Require Import Coq.omega.Omega.
 
 Require Import myvec.
 
 Import FIN.NOTATIONS.
 Import VEC.NOTATIONS.
+
 
 Local Open Scope FIN.
 Local Open Scope VEC.
@@ -364,6 +365,7 @@ Module HA.
 
   Instance standardModel : Model (@StandardTruth).
   Proof.
+    try omega.
     split;
     try (intro f; simpl; auto; try congruence; try firstorder; try omega; fail).
     - intro H. exact (H ()).

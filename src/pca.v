@@ -95,7 +95,7 @@ Module PCA.
                             end
              | u*v       =>
                  let id := idVec 0 (n := S n) in
-                 λ' (&s * $(λ' u) ** id * $(λ' v) ** id)
+                 λ' (&s * $ (λ' u) ** id * $ (λ' v) ** id)
              end
     end) n t.
   Proof. destruct n; destruct t; auto. Qed.
@@ -235,8 +235,8 @@ Module PCA.
           apply identityCombinatorDenotes.
       + rewrite (combinatoryCompleteness' _ _ H).
         assert
-          ((&s * $(λ' u) ** idVec 0 * $(λ' v) ** idVec 0) / f =
-           (&s / f) * (($(λ' u) ** idVec 0) / f) * (($(λ' v) ** idVec 0) / f))
+          ((&s * $ (λ' u) ** idVec 0 * $ (λ' v) ** idVec 0) / f =
+           (&s / f) * (($ (λ' u) ** idVec 0) / f) * (($ (λ' v) ** idVec 0) / f))
         as H' by reflexivity.
         setoid_rewrite H'. clear H'.
         setoid_rewrite idVecProductSubstitutionEq0'.

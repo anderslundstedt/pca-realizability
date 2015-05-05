@@ -213,14 +213,14 @@ Module PCA_REL.
   match t with
   | HA.O'       => λ (n := n) $ #0
   | HA.var x    => λ (PAS.termVar x)
-  | HA.S' t     => λ (n := n) ($ σ * $(termRepresentation t) ** PAS.idVec 0)
+  | HA.S' t     => λ (n := n) ($ σ * $ (termRepresentation t) ** PAS.idVec 0)
   | u ﬩ v       =>
-    let u' := $(termRepresentation u) ** PAS.idVec 0 in
-    let v' := $(termRepresentation v) ** PAS.idVec 0 in
+    let u' := $ (termRepresentation u) ** PAS.idVec 0 in
+    let v' := $ (termRepresentation v) ** PAS.idVec 0 in
     λ (n := n) ($ α * u' * v')
   | u ⋅ v       =>
-    let u' := $(termRepresentation u) ** PAS.idVec 0 in
-    let v' := $(termRepresentation v) ** PAS.idVec 0 in
+    let u' := $ (termRepresentation u) ** PAS.idVec 0 in
+    let v' := $ (termRepresentation v) ** PAS.idVec 0 in
     λ (n := n) ($ μ * u' * v')
   end.
   Local Notation termRep := termRepresentation.
@@ -372,7 +372,7 @@ Module PCA_REL.
       rewrite combinatoryCompleteness2. simpl.
       split; [exists k; reflexivity | ]. intros v [H _]. contradiction.
     - intros n A t.
-      exists (λ (n := S n) ($ π * $(termRep t) ** PAS.idVec 1 * PAS.lastVar)).
+      exists (λ (n := S n) ($ π * $ (termRep t) ** PAS.idVec 1 * PAS.lastVar)).
       intro f.
       split; [apply combinatoryCompleteness1 | ].
       intros u Ha. destruct (realizersDenote Ha) as [a Hu]. rewrite Hu in *.
@@ -430,7 +430,7 @@ Module PCA_REL.
       setoid_rewrite upLemma in Ha.
       rewrite <- Hx. exact (Ha _ Hb).
     - intros n A t.
-      exists (λ (n := S n) (PAS.lastVar * $(termRep t) ** PAS.idVec 1)).
+      exists (λ (n := S n) (PAS.lastVar * $ (termRep t) ** PAS.idVec 1)).
       split; [apply combinatoryCompleteness1 | ].
       intros u Ha. destruct (realizersDenote Ha) as [a Hu]. rewrite Hu in *.
       clear dependent u.
