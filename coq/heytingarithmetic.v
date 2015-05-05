@@ -102,9 +102,9 @@ Module HA.
   Definition termVecUp' {n m : nat} (f : VEC.t (term m) n)
     : VEC.t (term (S m)) (S n) := (termVecUp f, var FIN.last).
 
-  Definition idVec {n} : VEC.t (term n) n := VEC.map var (FIN_VEC.t n).
+  Definition idVec {n} : VEC.t (term n) n := VEC.finMap var.
 
-  Definition idVecUp {n} : VEC.t (term (S n)) n := VEC.map var (FIN_VEC.t' n 1).
+  Definition idVecUp {n} : VEC.t (term (S n)) n := VEC.finMap' (m := 1) var.
 
   Fixpoint formulaSubstitution {n m} (A : formula n) (f : VEC.t (term m) n)
     : formula m :=
@@ -237,16 +237,15 @@ Module HA.
   Lemma idVecValuationLemma {n} (f : VEC.t nat n) :
     vecStandardValuation idVec f = f.
   Proof.
-    apply VEC.pointwiseEquality. intro x.
-    setoid_rewrite VEC.mapCompose. apply FIN_VEC.nthMap.
+    unfold idVec, vecStandardValuation. rewrite VEC.finMapCompose. simpl.
+    apply VEC.pointwiseEquality, VEC.finMapNth.
   Qed.
 
   Lemma idVecUpValuationLemma {n} (f : VEC.t nat n) (x : nat) :
     vecStandardValuation idVecUp (f;; x) = f.
   Proof.
-    apply VEC.pointwiseEquality. intro y.
-    setoid_rewrite VEC.mapCompose. setoid_rewrite FIN_VEC.nthMap'.
-    reflexivity.
+    unfold idVecUp, vecStandardValuation. rewrite VEC.finMapCompose'. simpl.
+    apply VEC.pointwiseEquality, VEC.finMapNth.
   Qed.
 
   Lemma termUpValuationLemma {n} (t : term n) (f : VEC.t nat n) (x : nat) :

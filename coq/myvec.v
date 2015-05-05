@@ -130,6 +130,46 @@ Module VEC.
       + reflexivity.
   Qed.
 
+  Fixpoint finMap {A} {n} : (FIN.t n -> A) -> t A n := match n with
+  | O   => fun _ => ()
+  | S n => fun f => (finMap (fun x => f ++x);; f FIN.last)
+  end.
+
+  Lemma finMapNth {A} {n} (f : FIN.t n -> A) (x : FIN.t n) :
+    VEC.nth (finMap f) x = f x.
+  Proof.
+    induction n as [ | n IHn].
+    - inversion x.
+    - destruct x as [x | x]; simpl.
+      + rewrite IHn. reflexivity.
+      + destruct x. reflexivity.
+  Qed.
+
+  Lemma finMapCompose {A B} {n} (f : FIN.t n -> A) (g : A -> B) :
+    map g (finMap f) = finMap (fun x => g (f x)).
+  Proof.
+    induction n as [ | n IHn].
+    - reflexivity.
+    - simpl. rewrite IHn. reflexivity.
+  Qed.
+
+  Definition finMap' {A} {n m} (f : FIN.t (m + n) -> A) : t A n :=
+    finMap (fun x => f (FIN.up' x)).
+
+  Lemma finMapNth' {A} {n m} (f : FIN.t (m + n) -> A) (x : FIN.t n) :
+    VEC.nth (finMap' f) x = f (FIN.up' x).
+  Proof.
+    destruct n as [ | n].
+    - inversion x.
+    - destruct x as [x | x]; simpl.
+      + rewrite finMapNth. reflexivity.
+      + destruct x. reflexivity.
+  Qed.
+
+  Lemma finMapCompose' {A B} {n m} (f : FIN.t (m + n) -> A) (g : A -> B) :
+    map g (finMap' f) = finMap' (fun x => g (f x)).
+  Proof. unfold finMap'. apply finMapCompose. Qed.
+
   Definition init {A} {n} (v : t A (S n)) : t A n := let (v, _) := v in v.
 
   Definition last {A} {n} (v : t A (S n)) : A := let (_, a) := v in a.
@@ -201,46 +241,3 @@ Module VEC.
   End NOTATIONS.
 
 End VEC.
-
-Module FIN_VEC.
-
-  Import FIN.NOTATIONS.
-  Import VEC.NOTATIONS.
-  Local Open Scope FIN.
-  Local Open Scope VEC.
-
-  Fixpoint t (n : nat) : VEC.t (FIN.t n) n := match n with
-  | O   => ()
-  | S n => (VEC.map FIN.up (t n);; FIN.last)
-  end.
-
-  Lemma nthEq (n : nat) (x : FIN.t n) : VEC.nth (t n) x = x.
-  Proof.
-    induction n as [ | n IHn].
-    - inversion x.
-    - destruct x as [x | x].
-      + simpl. rewrite VEC.mapNth, IHn. reflexivity.
-      + destruct x. reflexivity.
-  Qed.
-
-  Lemma nthMap {A} {n} (f : FIN.t n -> A) (x : FIN.t n) :
-    VEC.nth (VEC.map f (t n)) x = f x.
-  Proof. rewrite VEC.mapNth, nthEq. reflexivity. Qed.
-
-  Fixpoint t' (n m : nat) : VEC.t (FIN.t (m + n)) n := match m with
-  | O   => t n
-  | S m => VEC.map FIN.up (t' n m)
-  end.
-
-  Lemma nthEq' (n m : nat) (x : FIN.t n) : VEC.nth (t' n m) x = FIN.up' x.
-  Proof.
-    induction m as [ | m IHm].
-    - apply nthEq.
-    - simpl. rewrite VEC.mapNth, IHm. reflexivity.
-  Qed.
-
-  Lemma nthMap' {A} {n m} (f : FIN.t (m + n) -> A) (x : FIN.t n) :
-    VEC.nth (VEC.map f (t' n m)) x = f (FIN.up' x).
-  Proof. rewrite VEC.mapNth, nthEq'. reflexivity. Qed.
-
-End FIN_VEC.

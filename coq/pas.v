@@ -86,7 +86,7 @@ Module PAS.
   Local Notation "&& P" := (pasVecToTermVec P) (at level 6).
 
   Definition idVec {_ : Pas} {n} m : VEC.t (term (m + n)) n :=
-    VEC.map termVar (FIN_VEC.t' n m).
+    VEC.finMap' termVar.
 
   Fixpoint substitution `{_ : Pas} {m n : nat} (t : term n)
                         (f : VEC.t (term m) n) : term m :=
@@ -106,8 +106,7 @@ Module PAS.
   Proof.
     induction t as [a | x | u IHu v IHv].
     - reflexivity.
-    - unfold idVec, substitution. rewrite VEC.mapNth, FIN_VEC.nthEq.
-      reflexivity.
+    - unfold idVec, substitution. rewrite VEC.finMapNth'. reflexivity.
     - simpl. setoid_rewrite IHu. setoid_rewrite IHv. reflexivity.
   Qed.
 
@@ -139,7 +138,7 @@ Module PAS.
   Proof.
     apply VEC.pointwiseEquality. intro x.
     unfold termVecSubst. rewrite VEC.mapNth.
-    unfold idVec. rewrite FIN_VEC.nthMap'.
+    unfold idVec. rewrite VEC.finMapNth'.
     simpl.
     induction k as [ | k IHk].
     - reflexivity.
