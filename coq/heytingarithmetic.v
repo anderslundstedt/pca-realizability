@@ -104,7 +104,7 @@ Module HA.
 
   Definition idVec {n} : VEC.t (term n) n := VEC.finMap var.
 
-  Definition idVecUp {n} : VEC.t (term (S n)) n := VEC.finMap' (m := 1) var.
+  Definition idVecUp {n} : VEC.t (term (S n)) n := VEC.finMap' (k := 1) var.
 
   Fixpoint formulaSubstitution {n m} (A : formula n) (f : VEC.t (term m) n)
     : formula m :=

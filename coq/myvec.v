@@ -1,5 +1,6 @@
 Require Import Coq.Classes.Morphisms.
 Require Coq.Arith.Compare_dec.
+Require Coq.Arith.Le.
 
 Module FIN.
 
@@ -15,9 +16,9 @@ Module FIN.
   Definition up {n} (x : t n) : t (S n) := inl x.
   Local Notation "++ x" := (up x) (at level 6, right associativity).
 
-  Fixpoint up' {n m} (x : t n) : t (m + n) := match m with
+  Fixpoint up' {n k} (x : t n) : t (k+n) := match k with
   | O   => x
-  | S n => ++(up' x)
+  | S k => ++(up' x)
   end.
 
   Definition ofNatType (x n : nat) : Type :=
@@ -30,8 +31,7 @@ Module FIN.
   Proof.
     induction n as [ | n IHn].
     - exact (Le.le_0_n x).
-    - unfold ofNatType in *.
-      destruct (Compare_dec.le_lt_dec n x) as [H | H].
+    - unfold ofNatType in *. destruct (Compare_dec.le_lt_dec n x) as [H | H].
       + destruct (Compare_dec.le_lt_dec (S n) x) as [H' | H'].
         * exact H'.
         * exact last.
@@ -95,7 +95,7 @@ Module VEC.
   Proof. destruct v. reflexivity. Qed.
 
   Fixpoint map {A B} {n} (f : A -> B) : t A n -> t B n := match n with
-  | O   => fun _ => tt
+  | O   => fun _ => ()
   | S n => fun v => let (v, a) := v in (map f v, f a)
   end.
 
@@ -153,10 +153,10 @@ Module VEC.
     - simpl. rewrite IHn. reflexivity.
   Qed.
 
-  Definition finMap' {A} {n m} (f : FIN.t (m + n) -> A) : t A n :=
+  Definition finMap' {A} {n k} (f : FIN.t (k+n) -> A) : t A n :=
     finMap (fun x => f (FIN.up' x)).
 
-  Lemma finMapNth' {A} {n m} (f : FIN.t (m + n) -> A) (x : FIN.t n) :
+  Lemma finMapNth' {A} {n k} (f : FIN.t (k+n) -> A) (x : FIN.t n) :
     VEC.nth (finMap' f) x = f (FIN.up' x).
   Proof.
     destruct n as [ | n].
@@ -166,7 +166,7 @@ Module VEC.
       + destruct x. reflexivity.
   Qed.
 
-  Lemma finMapCompose' {A B} {n m} (f : FIN.t (m + n) -> A) (g : A -> B) :
+  Lemma finMapCompose' {A B} {n k} (f : FIN.t (k+n) -> A) (g : A -> B) :
     map g (finMap' f) = finMap' (fun x => g (f x)).
   Proof. unfold finMap'. apply finMapCompose. Qed.
 
@@ -177,7 +177,7 @@ Module VEC.
   Lemma initLastEq {A} {n} (v : t A (S n)) : v = (init v, last v).
   Proof. destruct v as [v a]. reflexivity. Qed.
 
-  Fixpoint concat {A} {n m} (v : t A n) : t A m -> t A (m + n) :=
+  Fixpoint concat {A} {n m} (v : t A n) : t A m -> t A (m+n) :=
   match m with
   | O   => fun _ => v
   | S m => fun w => let (w, a) := w in (concat v w, a)
