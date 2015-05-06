@@ -1,6 +1,4 @@
 Require Import Coq.Classes.Morphisms.
-Require Coq.Arith.Compare_dec.
-Require Coq.Arith.Le.
 
 Module FIN.
 
@@ -21,30 +19,22 @@ Module FIN.
   | S k => ++(up' x)
   end.
 
-  Definition ofNatType (x n : nat) : Type :=
-  match Compare_dec.le_lt_dec n x with
-  | left  _ => n <= x
-  | right _ => t n
-  end.
 
-  Definition ofNat (x n : nat) : ofNatType x n.
-  Proof.
-    induction n as [ | n IHn].
-    - exact (Le.le_0_n x).
-    - unfold ofNatType in *. destruct (Compare_dec.le_lt_dec n x) as [H | H].
-      + destruct (Compare_dec.le_lt_dec (S n) x) as [H' | H'].
-        * exact H'.
-        * exact last.
-      + destruct (Compare_dec.le_lt_dec (S n) x) as [H' | H'].
-        * exfalso. apply (Lt.lt_not_le x n H). apply Le.le_Sn_le. exact H'.
-        * exact ++IHn.
-  Defined.
+  Definition ofNat (n k : nat) : t (k + S n) := up' last.
 
   Lemma t0Empty (x : t 0) : False.
   Proof. destruct x. Qed.
 
   Lemma t1Singleton (x : t 1) : x = last.
   Proof. destruct x as [x | x]; destruct x. reflexivity. Qed.
+
+  Fixpoint toNat {n} : t (S n) -> nat := match n with
+  | O   => fun x => 0
+  | S n => fun x => match x with
+                    | inl x => toNat x
+                    | inr x => n
+                    end
+  end.
 
   Module NOTATIONS.
     Delimit Scope FIN with FIN.

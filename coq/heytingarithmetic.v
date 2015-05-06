@@ -29,16 +29,16 @@ Module HA.
   Local Infix "﬩" := plus' (at level 64).
   Local Infix "⋅" := mult' (at level 63).
 
-  Definition x11 : term 1 := var (FIN.ofNat 0 1).
-  Definition x12 : term 2 := var (FIN.ofNat 0 2).
-  Definition x22 : term 2 := var (FIN.ofNat 1 2).
-  Definition x13 : term 3 := var (FIN.ofNat 0 3).
-  Definition x23 : term 3 := var (FIN.ofNat 1 3).
-  Definition x33 : term 3 := var (FIN.ofNat 2 3).
-  Definition x14 : term 4 := var (FIN.ofNat 0 4).
-  Definition x24 : term 4 := var (FIN.ofNat 1 4).
-  Definition x34 : term 4 := var (FIN.ofNat 2 4).
-  Definition x44 : term 4 := var (FIN.ofNat 3 4).
+  Definition x11 : term 1 := var (FIN.ofNat 0 0).
+  Definition x12 : term 2 := var (FIN.ofNat 0 1).
+  Definition x22 : term 2 := var (FIN.ofNat 1 0).
+  Definition x13 : term 3 := var (FIN.ofNat 0 2).
+  Definition x23 : term 3 := var (FIN.ofNat 1 1).
+  Definition x33 : term 3 := var (FIN.ofNat 2 0).
+  Definition x14 : term 4 := var (FIN.ofNat 0 3).
+  Definition x24 : term 4 := var (FIN.ofNat 1 2).
+  Definition x34 : term 4 := var (FIN.ofNat 2 1).
+  Definition x44 : term 4 := var (FIN.ofNat 3 0).
 
   Inductive atom (n : nat) :=
     FF     : atom n

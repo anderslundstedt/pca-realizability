@@ -49,21 +49,21 @@ Module PAS.
 
   Definition lastVar {_ : Pas} {n} : term (S n) := termVar FIN.last.
 
-  Definition x11 {_ : Pas} : term 1 := termVar (FIN.ofNat 0 1).
-  Definition x12 {_ : Pas} : term 2 := termVar (FIN.ofNat 0 2).
-  Definition x22 {_ : Pas} : term 2 := termVar (FIN.ofNat 1 2).
-  Definition x13 {_ : Pas} : term 3 := termVar (FIN.ofNat 0 3).
-  Definition x23 {_ : Pas} : term 3 := termVar (FIN.ofNat 1 3).
-  Definition x33 {_ : Pas} : term 3 := termVar (FIN.ofNat 2 3).
-  Definition x14 {_ : Pas} : term 4 := termVar (FIN.ofNat 0 4).
-  Definition x24 {_ : Pas} : term 4 := termVar (FIN.ofNat 1 4).
-  Definition x34 {_ : Pas} : term 4 := termVar (FIN.ofNat 2 4).
-  Definition x44 {_ : Pas} : term 4 := termVar (FIN.ofNat 3 4).
-  Definition x15 {_ : Pas} : term 5 := termVar (FIN.ofNat 0 5).
-  Definition x25 {_ : Pas} : term 5 := termVar (FIN.ofNat 1 5).
-  Definition x35 {_ : Pas} : term 5 := termVar (FIN.ofNat 2 5).
-  Definition x45 {_ : Pas} : term 5 := termVar (FIN.ofNat 3 5).
-  Definition x55 {_ : Pas} : term 5 := termVar (FIN.ofNat 4 5).
+  Definition x11 {_ : Pas} : term 1 := termVar (FIN.ofNat 0 0).
+  Definition x12 {_ : Pas} : term 2 := termVar (FIN.ofNat 0 1).
+  Definition x22 {_ : Pas} : term 2 := termVar (FIN.ofNat 1 0).
+  Definition x13 {_ : Pas} : term 3 := termVar (FIN.ofNat 0 2).
+  Definition x23 {_ : Pas} : term 3 := termVar (FIN.ofNat 1 1).
+  Definition x33 {_ : Pas} : term 3 := termVar (FIN.ofNat 2 0).
+  Definition x14 {_ : Pas} : term 4 := termVar (FIN.ofNat 0 3).
+  Definition x24 {_ : Pas} : term 4 := termVar (FIN.ofNat 1 2).
+  Definition x34 {_ : Pas} : term 4 := termVar (FIN.ofNat 2 1).
+  Definition x44 {_ : Pas} : term 4 := termVar (FIN.ofNat 3 0).
+  Definition x15 {_ : Pas} : term 5 := termVar (FIN.ofNat 0 4).
+  Definition x25 {_ : Pas} : term 5 := termVar (FIN.ofNat 1 3).
+  Definition x35 {_ : Pas} : term 5 := termVar (FIN.ofNat 2 2).
+  Definition x45 {_ : Pas} : term 5 := termVar (FIN.ofNat 3 1).
+  Definition x55 {_ : Pas} : term 5 := termVar (FIN.ofNat 4 0).
 
   Fixpoint closedTermToTerm `{_ : Pas} {n} (t : term 0) : term n :=
   match t with
