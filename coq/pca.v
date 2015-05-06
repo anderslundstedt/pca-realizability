@@ -303,14 +303,14 @@ Module PCA.
   Qed.
 
   Lemma combinatoryCompletenessInstance1 {pca : Pca} (t : term 1) (a : pca) :
-    λ t * &a ≃ t / &&((tt, a) : VEC.t pca 1).
+    λ t * &a ≃ t / &&(((), a) : VEC.t pca 1).
   Proof.
     cutrewrite (λ t * &a = λ t ** &&(();; a)); [ | reflexivity].
     apply combinatoryCompleteness2.
   Qed.
 
   Lemma combinatoryCompletenessInstance2 {pca : Pca} (t : term 2) (a b : pca) :
-    λ t * &a * &b ≃ t / &&((tt, a, b) : VEC.t pca 2).
+    λ t * &a * &b ≃ t / &&(((), a, b) : VEC.t pca 2).
   Proof.
     cutrewrite (λ t * &a*&b = λ t ** &&(();; a;; b)); [ | reflexivity].
     apply combinatoryCompleteness2.
@@ -318,7 +318,7 @@ Module PCA.
 
   Lemma combinatoryCompletenessInstance3 {pca : Pca} (t : term 3)
                                          (a b c : pca) :
-    λ t * &a * &b * &c ≃ t / &&((tt, a, b, c) : VEC.t pca 3).
+    λ t * &a * &b * &c ≃ t / &&(((), a, b, c) : VEC.t pca 3).
   Proof.
     cutrewrite (λ t * &a*&b*&c = λ t ** &&(();; a;; b;; c)); [ | reflexivity].
     apply combinatoryCompleteness2.
@@ -326,7 +326,7 @@ Module PCA.
 
   Lemma combinatoryCompletenessInstance4 {pca : Pca} (t : term 4)
                                          (a b c d : pca) :
-    λ t * &a * &b * &c * &d ≃ t / &&((tt, a, b, c, d) : VEC.t pca 4).
+    λ t * &a * &b * &c * &d ≃ t / &&(((), a, b, c, d) : VEC.t pca 4).
   Proof.
     cutrewrite (λ t * &a*&b*&c*&d = λ t ** &&(();; a;; b;; c;; d));
       [ | reflexivity].
@@ -335,7 +335,7 @@ Module PCA.
 
   Lemma combinatoryCompletenessInstance5 {pca : Pca} (t : term 5)
                                          (a b c d e: pca) :
-    λ t * &a * &b * &c * &d * &e ≃ t / &&((tt, a, b, c, d, e) : VEC.t pca 5).
+    λ t * &a * &b * &c * &d * &e ≃ t / &&(((), a, b, c, d, e) : VEC.t pca 5).
   Proof.
     cutrewrite (λ t * &a*&b*&c*&d*&e = λ t ** &&(();; a;; b;; c;; d;; e));
       [ | reflexivity].
@@ -362,7 +362,7 @@ Module PCA.
 
   Lemma pairingCombinatorDenotes'' {pca : Pca} (a b : pca) : π*&a*&b!.
   Proof.
-    cutrewrite (π*&a*&b = π**&&((tt, a, b) : VEC.t pca 2)); [ | reflexivity].
+    cutrewrite (π*&a*&b = π**&&(((), a, b) : VEC.t pca 2)); [ | reflexivity].
     apply combinatoryCompleteness1.
   Qed.
 

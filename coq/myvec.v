@@ -112,17 +112,20 @@ Module VEC.
 
 (**
 *** Definition
-The type of [A]-vectors of length $0$ is the unit type.
+There is one [A]-vector of length $0$---the empty vector.
 The type of [A]-vectors of length $n+1$ is
 the product of the type of $n$-element vectors and [A].
 *)
 
+  Inductive Empty (A : Type) := empty.
+  Arguments empty {_}.
+
   Fixpoint t A (n : nat) : Type := match n with
-  | O   => unit
+  | O   => Empty A
   | S n => prod (t A n) A
   end.
 
-  Local Notation "()" := (tt : t _ 0).
+  Local Notation "()" := (empty : t _ 0).
 
   Local Infix ";;" :=
     ((fun A n (v : t A n) (a : A) => ((v, a) : t A (S n))) _ _)
@@ -177,13 +180,6 @@ the product of the type of $n$-element vectors and [A].
   Qed.
 
 (**
-*** Exactly one empty vector
-*)
-
-  Lemma uniqueEmptyVector {A} (v : t A 0) : v = tt.
-  Proof. destruct v. reflexivity. Qed.
-
-(**
 *** Concatenation of vectors
 *)
 
@@ -203,7 +199,7 @@ the product of the type of $n$-element vectors and [A].
   end.
 
   Fixpoint tail {A} {n} : t A (S n) -> t A n := match n with
-  | O   => fun _ => tt
+  | O   => fun _ => empty
   | S n => fun v => let (v, a) := v in (tail v, a)
   end.
 
