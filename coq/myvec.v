@@ -2,11 +2,11 @@ Require Import Coq.Classes.Morphisms.
 
 Module FIN.
 
-  Inductive Nat (n : nat) := lift :> Nat n.
+  Inductive Singleton (n : nat) := lift :> Singleton n.
 
   Fixpoint t (n : nat) : Type := match n with
   | O   => Empty_set
-  | S n => sum (t n) (Nat n)
+  | S n => sum (t n) (Singleton n)
   end.
 
   Definition last {n} : t (S n) := inr (lift n).
