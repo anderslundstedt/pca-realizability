@@ -1,8 +1,13 @@
+(**
+* Partial combinatory algebras
+*)
+
 Require Coq.Arith.Minus.
 Require Coq.Numbers.Natural.Peano.NPeano.
 
-Require Import myvec.
+Require Import fin.
 Require Import pas.
+Require Import vec.
 
 Import FIN.NOTATIONS.
 Import PAS.
@@ -16,151 +21,58 @@ Local Open Scope PAS.
 
 Module PCA.
 
+  (**
+  ** Definition
+  *)
+
   Class Pca := {
     pas :> Pas;
     k : pas;
     s : pas;
-    ksDistinct : ~ k == s;
     kSpec (a b : pas) : &k*&a*&b ≃ &a;
     sSpec1 (a b : pas) : &s*&a*&b!;
     sSpec2 (a b c: pas) : &s*&a*&b*&c ≃ &a*&c*(&b*&c)
   }.
   Local Coercion pas : Pca >-> Pas.
 
+  Definition NonTrivial (pca : Pca) : Prop := exists a b : pca, ~ a == b.
+
   Lemma kSpec' {pca : Pca} (t : term 0) (b : pca) : &k*t*&b ≃ t.
   Proof.
     apply correctness2. intro a. split; intro H.
     - assert (&k*t*&b!) as H' by eauto.
-      assert (t!) as [a' Ht] by eauto using subTermDenotes.
+      assert (t!) as [a' Ht] by eauto using subtermDenotes.
       rewrite <- H, Ht. symmetry. apply kSpec.
     - rewrite H. apply kSpec.
   Qed.
 
   Lemma kaDenotes {pca : Pca} (a : pca) : &k*&a!.
-  Proof. cut (&k*&a*&a!); eauto using subTermDenotes, kSpec. Qed.
+  Proof. cut (&k*&a*&a!); eauto using subtermDenotes, kSpec. Qed.
 
   Lemma sSpec2' {pca : Pca} (u v w : term 0) : &s*u*v*w ≃ u*w*(v*w).
   Proof.
     apply correctness2. intro d. split; intro H; rewrite <- H.
     - assert (&s*u*v*w!) as H' by eauto.
-      assert (u!) as [a Hua] by eauto using subTermDenotes.
-      assert (v!) as [b Hvb] by eauto using subTermDenotes.
-      assert (w!) as [c Hwc] by eauto using subTermDenotes.
+      assert (u!) as [a Hua] by eauto using subtermDenotes.
+      assert (v!) as [b Hvb] by eauto using subtermDenotes.
+      assert (w!) as [c Hwc] by eauto using subtermDenotes.
       rewrite Hua, Hvb, Hwc. symmetry. apply sSpec2.
     - assert (u*w*(v*w)!) as H' by eauto.
-      assert (u!) as [a Hua] by eauto using subTermDenotes.
-      assert (v!) as [b Hvb] by eauto using subTermDenotes.
-      assert (w!) as [c Hwc] by eauto using subTermDenotes.
+      assert (u!) as [a Hua] by eauto using subtermDenotes.
+      assert (v!) as [b Hvb] by eauto using subtermDenotes.
+      assert (w!) as [c Hwc] by eauto using subtermDenotes.
       rewrite Hua, Hvb, Hwc. apply sSpec2.
   Qed.
 
   Lemma saDenotes {pca : Pca} (a : pca) : &s*&a!.
-  Proof. cut (&s*&a*&a!); eauto using subTermDenotes, sSpec1. Qed.
+  Proof. cut (&s*&a*&a!); eauto using subtermDenotes, sSpec1. Qed.
+
+  (**
+  ** Identity combinator
+  *)
 
   Definition identityCombinator {_ : Pca} : term 0 := &s*&k*&k.
   Local Notation ι := identityCombinator.
-
-  Definition representation' {pca : Pca} {n : nat} (t : term (S n)) : term 0.
-  Proof.
-    induction n as [ | n IHn].
-    - induction t as [a | x | u IHu v IHv].
-      + exact (&k*&a).
-      + exact ι.
-      + exact (&s*IHu*IHv).
-    - induction t as [a | x |u IHu v IHv].
-      + exact (IHn (&k*&a)).
-      + destruct x as [x | x].
-        * exact (IHn (&k * termVar x)).
-        * exact (IHn $ ι).
-      + set (i := idVec 0 (n := S n)).
-        set (u' := $ IHu ** i).
-        set (v' := $ IHv ** i).
-        exact (IHn (&s*u'*v')).
-  Defined.
-  Local Notation λ' := representation'.
-
-  Lemma representationDefinition' {pca : Pca} {n : nat} (t : term (S n)) :
-    @representation' pca n t =
-    (fun (n : nat) => match n with
-    | O   => fun t => match t with
-             | &a        => &k*&a
-             | termVar _ => ι
-             | u*v       => &s * λ' u * λ' v
-             end
-    | S n => fun t => match t with
-             | &a        => λ' (n := n) (&k*&a)
-             | termVar x => match x with
-                            | inl x => λ' (n := n) (&k * termVar x)
-                            | inr _ => λ' (n := n) $ ι
-                            end
-             | u*v       =>
-                 let id := idVec 0 (n := S n) in
-                 λ' (&s * $ (λ' u) ** id * $ (λ' v) ** id)
-             end
-    end) n t.
-  Proof. destruct n; destruct t; auto. Qed.
-
-  Global Opaque representation'.
-
-  Definition representation {_ : Pca} {n : nat} : term n -> term 0 :=
-  match n with
-  | O   => fun t => t
-  | S n => fun t => λ' t
-  end.
-  Local Notation λ := representation.
-
-  Definition kAltCombinator {_ : Pca} : term 0 := &k*ι.
-  Local Notation κ := kAltCombinator.
-
-  Definition pairingCombinator {_ : Pca} : term 0 := λ (x33*x13*x23).
-  Local Notation π := pairingCombinator.
-
-  Definition leftProjectionCombinator {_ : Pca} : term 0 := λ (x11*&k).
-  Local Notation π1 := leftProjectionCombinator.
-
-  Definition rightProjectionCombinator {_ : Pca} : term 0 := λ (x11 * $ κ).
-  Local Notation π2 := rightProjectionCombinator.
-
-  Fixpoint natRepresentationCombinator `{_ : Pca} (n : nat) : term 0 :=
-  match n with
-  | O   => ι
-  | S n => π * κ * (natRepresentationCombinator n)
-  end.
-  Local Notation "# n" := (natRepresentationCombinator n) (at level 5).
-
-  Definition caseCombinator {_ : Pca} : term 0 := λ ($ π1 * x33 * x13 * x23).
-  Local Notation δ := caseCombinator.
-
-  Definition successorCombinator {_ : Pca} : term 0 := π * κ.
-  Local Notation σ := successorCombinator.
-
-  Definition predecessorCombinator {_ : Pca} : term 0 :=
-    λ ($ π1 * x11 * $ #0 * $ π2 * x11).
-  Local Notation ψ := predecessorCombinator.
-
-  Definition fixedPointCombinator {_ : Pca} : term 0 :=
-    let u := λ (x22*(x12*x12*x22)) in u*u.
-  Local Notation φ1 := fixedPointCombinator.
-
-  Definition doubleFixedPointCombinator {_ : Pca} : term 0 :=
-    let u := λ (x23*(x13*x13*x23)*x33) in u*u.
-  Local Notation φ2 := doubleFixedPointCombinator.
-
-  Local Notation r' :=
-    (λ (x35 * ($ ψ * x45) * (x15 * x25 * x35 * ($ ψ * x45) * &k))).
-  Local Notation r :=
-    (λ ($ δ * (&k * x24) * ($ r' * x14 * x24 * x34 * x44) * x44)).
-  Definition primitiveRecursionCombinator {_ : Pca} : term 0 :=
-    λ ($ φ2 * $ r * x13 * x23 * x33 * &k).
-  Local Notation ρ := primitiveRecursionCombinator.
-
-  Definition additionCombinator {_ : Pca} : term 0 :=
-    λ ($ ρ * x22 * (&k * $ σ) * x12).
-  Local Notation α := additionCombinator.
-
-  Definition multiplicationCombinator {_ : Pca} : term 0 :=
-    λ ($ ρ * $ #0 * (&k * ($ α * x22)) * x12).
-  Local Notation μ := multiplicationCombinator.
 
   Lemma identityCombinatorCorrect {pca : Pca} (a : pca) : ι*&a ≃ &a.
   Proof.
@@ -173,13 +85,87 @@ Module PCA.
   Lemma identityCombinatorCorrect' {pca : Pca} (t : term 0) : ι*t ≃ t.
   Proof.
     apply correctness2. intro a. split; intro H.
-    - assert (t!) as [b Htb] by eauto using subTermDenotes. rewrite Htb in *.
+    - assert (t!) as [b Htb] by eauto using subtermDenotes. rewrite Htb in *.
       rewrite identityCombinatorCorrect in H. exact H.
     -  rewrite H. apply identityCombinatorCorrect.
   Qed.
 
   Lemma identityCombinatorDenotes {pca : Pca} : ι!.
   Proof. apply sSpec1. Qed.
+
+  (**
+  ** Nontriviality
+  *)
+
+  Lemma ksDistinctIffNonTrivial {pca : Pca} : ~ k == s <-> NonTrivial pca.
+  Proof.
+    unfold NonTrivial. split; [eauto | ].
+    intros [a [b Hab]] Hks. apply Hab, constInjective.
+    assert (forall a : pca, &a ≃ &k) as H. {
+      clear a b Hab. intro a.
+      setoid_rewrite <- identityCombinatorCorrect at 1.
+      unfold identityCombinator.
+      rewrite <- Hks, kSpec at 1.
+      setoid_rewrite <- identityCombinatorCorrect at 1.
+      unfold identityCombinator.
+      rewrite <- Hks, kSpec, kSpec.
+      reflexivity.
+    }
+    setoid_rewrite H. reflexivity.
+  Qed.
+
+  (**
+  ** Term representations
+  *)
+
+  Definition representation' {pca : Pca} {n : nat} (t : term (S n)) : term 0.
+  Proof.
+    induction n as [ | n IHn].
+    - induction t as [a | x | u IHu v IHv].
+      + exact (&k*&a).
+      + exact ι.
+      + exact (&s*IHu*IHv).
+    - induction t as [a | x |u IHu v IHv].
+      + exact (IHn (&k*&a)).
+      + destruct x as [x | x].
+        * exact (IHn (&k * var x)).
+        * exact (IHn §ι).
+      + set (i := idVec 0 (n := S n)).
+        set (u' := §IHu ** i).
+        set (v' := §IHv ** i).
+        exact (IHn (&s*u'*v')).
+  Defined.
+  Local Notation λ' := representation'.
+
+  Lemma representationDefinition' {pca : Pca} {n : nat} (t : term (S n)) :
+    @representation' pca n t =
+    (fun (n : nat) => match n with
+    | O   => fun t => match t with
+             | &a    => &k*&a
+             | var _ => ι
+             | u*v   => &s * λ' u * λ' v
+             end
+    | S n => fun t => match t with
+             | &a    => λ' (n := n) (&k*&a)
+             | var x => match x with
+                        | inl x => λ' (n := n) (&k * var x)
+                        | inr _ => λ' (n := n) §ι
+                        end
+             | u*v   =>
+                 let id := idVec 0 (n := S n) in
+                 λ' (&s * §(λ' u) ** id * §(λ' v) ** id)
+             end
+    end) n t.
+  Proof. destruct n; destruct t; auto. Qed.
+
+  Global Opaque representation'.
+
+  Definition representation {_ : Pca} {n : nat} : term n -> term 0 :=
+  match n with
+  | O   => fun t => t
+  | S n => fun t => λ' t
+  end.
+  Local Notation λ := representation.
 
   Theorem combinatoryCompleteness' {pca : Pca} {n : nat} (t : term (S n))
                                    (f : VEC.t (term 0) (S n)) :
@@ -231,12 +217,12 @@ Module PCA.
           unfold substitution, pasVecToTermVec.
           destruct (H x) as [a Ha]. rewrite Ha. apply kaDenotes.
         * rewrite
-            (combinatoryCompleteness' _ _ H), closedTermSubstitutionLemma0.
+            (combinatoryCompleteness' _ _ H), closedTermSubstitutionEq0.
           apply identityCombinatorDenotes.
       + rewrite (combinatoryCompleteness' _ _ H).
         assert
-          ((&s * $ (λ' u) ** idVec 0 * $ (λ' v) ** idVec 0) / f =
-           (&s / f) * (($ (λ' u) ** idVec 0) / f) * (($ (λ' v) ** idVec 0) / f))
+          ((&s * §(λ' u) ** idVec 0 * §(λ' v) ** idVec 0) / f =
+           (&s / f) * ((§(λ' u) ** idVec 0) / f) * ((§(λ' v) ** idVec 0) / f))
         as H' by reflexivity.
         setoid_rewrite H'. clear H'.
         setoid_rewrite idVecProductSubstitutionEq0'.
@@ -250,7 +236,7 @@ Module PCA.
   Proof.
     intro H.
     destruct n as [ | n].
-    - destruct f. simpl. rewrite emptySubstitutionLemma, closedTermToTermLemma.
+    - destruct f. simpl. rewrite emptySubstitutionEq, closedTermToClosedTermEq.
       reflexivity.
     - apply combinatoryCompleteness'. exact H.
   Qed.
@@ -260,7 +246,7 @@ Module PCA.
     λ t ** &&f !.
   Proof.
     apply combinatoryCompleteness1'. intro x.
-    unfold pasVecToTermVec. rewrite VEC.mapNth.
+    unfold pasVecToTermVec. rewrite VEC.nthMapEq.
     exists (VEC.nth f x). reflexivity.
   Qed.
 
@@ -269,7 +255,7 @@ Module PCA.
     λ t ** &&f ≃ t/&&f.
   Proof.
     apply combinatoryCompleteness2'. intro x.
-    unfold pasVecToTermVec. rewrite VEC.mapNth.
+    unfold pasVecToTermVec. rewrite VEC.nthMapEq.
     exists (VEC.nth f x). reflexivity.
   Qed.
 
@@ -278,7 +264,7 @@ Module PCA.
   Lemma representationsDenote {pca : Pca} {n : nat} (t : term (S n)) : λ t !.
   Proof.
     set (f := VEC.copies n k).
-    apply (subTermDenotesProduct _ &&f).
+    apply (subtermDenotesProduct _ &&f).
     apply combinatoryCompleteness1.
   Qed.
 
@@ -287,9 +273,9 @@ Module PCA.
     λ t ** &&f!.
   Proof.
     set (g := VEC.copies m k).
-    apply (subTermDenotesProduct _ &&g).
-    rewrite productApplicationEq.
-    unfold pasVecToTermVec. rewrite <- VEC.concatMap.
+    apply (subtermDenotesProduct _ &&g).
+    rewrite doubleProductEq.
+    unfold pasVecToTermVec. rewrite <- VEC.mapConcatEq.
     apply combinatoryCompleteness1.
   Qed.
 
@@ -303,14 +289,14 @@ Module PCA.
   Qed.
 
   Lemma combinatoryCompletenessInstance1 {pca : Pca} (t : term 1) (a : pca) :
-    λ t * &a ≃ t / &&(((), a) : VEC.t pca 1).
+    λ t * &a ≃ t / &&((();; a)).
   Proof.
     cutrewrite (λ t * &a = λ t ** &&(();; a)); [ | reflexivity].
     apply combinatoryCompleteness2.
   Qed.
 
   Lemma combinatoryCompletenessInstance2 {pca : Pca} (t : term 2) (a b : pca) :
-    λ t * &a * &b ≃ t / &&(((), a, b) : VEC.t pca 2).
+    λ t * &a * &b ≃ t / &&((();; a;; b)).
   Proof.
     cutrewrite (λ t * &a*&b = λ t ** &&(();; a;; b)); [ | reflexivity].
     apply combinatoryCompleteness2.
@@ -318,7 +304,7 @@ Module PCA.
 
   Lemma combinatoryCompletenessInstance3 {pca : Pca} (t : term 3)
                                          (a b c : pca) :
-    λ t * &a * &b * &c ≃ t / &&(((), a, b, c) : VEC.t pca 3).
+    λ t * &a * &b * &c ≃ t / &&((();; a;; b;; c)).
   Proof.
     cutrewrite (λ t * &a*&b*&c = λ t ** &&(();; a;; b;; c)); [ | reflexivity].
     apply combinatoryCompleteness2.
@@ -326,7 +312,7 @@ Module PCA.
 
   Lemma combinatoryCompletenessInstance4 {pca : Pca} (t : term 4)
                                          (a b c d : pca) :
-    λ t * &a * &b * &c * &d ≃ t / &&(((), a, b, c, d) : VEC.t pca 4).
+    λ t * &a * &b * &c * &d ≃ t / &&((();; a;; b;; c;; d)).
   Proof.
     cutrewrite (λ t * &a*&b*&c*&d = λ t ** &&(();; a;; b;; c;; d));
       [ | reflexivity].
@@ -335,12 +321,23 @@ Module PCA.
 
   Lemma combinatoryCompletenessInstance5 {pca : Pca} (t : term 5)
                                          (a b c d e: pca) :
-    λ t * &a * &b * &c * &d * &e ≃ t / &&(((), a, b, c, d, e) : VEC.t pca 5).
+    λ t * &a * &b * &c * &d * &e ≃ t / &&((();; a;; b;; c;; d;; e)).
   Proof.
     cutrewrite (λ t * &a*&b*&c*&d*&e = λ t ** &&(();; a;; b;; c;; d;; e));
       [ | reflexivity].
     apply combinatoryCompleteness2.
   Qed.
+
+  (**
+  ** Combinators
+  *)
+
+  (**
+  *** κ combinator
+  *)
+
+  Definition kAltCombinator {_ : Pca} : term 0 := &k*ι.
+  Local Notation κ := kAltCombinator.
 
   Lemma kAltCombinatorCorrect {pca : Pca} (a b : pca) : κ*&a*&b ≃ &b.
   Proof. unfold κ. rewrite kSpec'. apply identityCombinatorCorrect. Qed.
@@ -355,7 +352,14 @@ Module PCA.
   Qed.
 
   Lemma kAltCombinatorDenotes' {pca : Pca} (a : pca) : κ*&a!.
-  Proof. cut (κ*&a*&a!); eauto using subTermDenotes, kAltCombinatorCorrect. Qed.
+  Proof. cut (κ*&a*&a!); eauto using subtermDenotes, kAltCombinatorCorrect. Qed.
+
+  (**
+  *** Pairing combinator
+  *)
+
+  Definition pairingCombinator {_ : Pca} : term 0 := λ (x23*x03*x13).
+  Local Notation π := pairingCombinator.
 
   Lemma pairingCombinatorDenotes {pca : Pca} : π!.
   Proof. apply representationsDenote. Qed.
@@ -368,8 +372,18 @@ Module PCA.
 
   Lemma pairingCombinatorDenotes' {pca : Pca} (a : pca) : π*&a!.
   Proof.
-    cut (π*&a*&a!); eauto using subTermDenotes, pairingCombinatorDenotes''.
+    cut (π*&a*&a!); eauto using subtermDenotes, pairingCombinatorDenotes''.
   Qed.
+
+  (**
+  *** Projection combinators
+  *)
+
+  Definition leftProjectionCombinator {_ : Pca} : term 0 := λ (x01*&k).
+  Local Notation π1 := leftProjectionCombinator.
+
+  Definition rightProjectionCombinator {_ : Pca} : term 0 := λ (x01 * §κ).
+  Local Notation π2 := rightProjectionCombinator.
 
   Lemma leftProjectionCombinatorCorrect {pca : Pca} (a b : pca) :
     π1*(π*&a*&b) ≃ &a.
@@ -384,7 +398,7 @@ Module PCA.
     π1*(π*t*&b) ≃ t.
   Proof.
     apply correctness2. intro a. split; intro H.
-    - assert (t!) as [a' Ht] by eauto 7 using subTermDenotes. rewrite Ht in *.
+    - assert (t!) as [a' Ht] by eauto 7 using subtermDenotes. rewrite Ht in *.
       rewrite leftProjectionCombinatorCorrect in H. exact H.
     - rewrite H. apply leftProjectionCombinatorCorrect.
   Qed.
@@ -392,7 +406,7 @@ Module PCA.
   Lemma leftProjectionCombinatorDenotes {pca : Pca} : π1!.
   Proof.
     cut (π1*(π*&k*&k)!);
-    eauto using subTermDenotes, leftProjectionCombinatorCorrect.
+    eauto using subtermDenotes, leftProjectionCombinatorCorrect.
   Qed.
 
   Lemma rightProjectionCombinatorCorrect {pca : Pca} (a b : pca) :
@@ -401,15 +415,15 @@ Module PCA.
     destruct (pairingCombinatorDenotes'' a b) as [p Hp]. rewrite Hp.
     unfold π2. rewrite combinatoryCompletenessInstance1. simpl.
     destruct (kAltCombinatorDenotes) as [k' Hk'].
-    rewrite Hk', <- Hp. unfold π. rewrite combinatoryCompletenessInstance3. simpl.
-    rewrite <- Hk'. apply kAltCombinatorCorrect.
+    rewrite Hk', <- Hp. unfold π. rewrite combinatoryCompletenessInstance3.
+    simpl. rewrite <- Hk'. apply kAltCombinatorCorrect.
   Qed.
 
   Lemma rightProjectionCombinatorCorrect' {pca : Pca} (a : pca) (t : term 0) :
     π2*(π*&a*t) ≃ t.
   Proof.
     apply correctness2. intro b. split; intro H.
-    - assert (t!) as [b' Ht] by eauto 6 using subTermDenotes. rewrite Ht in *.
+    - assert (t!) as [b' Ht] by eauto 6 using subtermDenotes. rewrite Ht in *.
       rewrite rightProjectionCombinatorCorrect in H. exact H.
     - rewrite H. apply rightProjectionCombinatorCorrect.
   Qed.
@@ -417,8 +431,19 @@ Module PCA.
   Lemma rightProjectionCombinatorDenotes {pca : Pca} : π2!.
   Proof.
     assert (π2*(π*&k*&k)!) by eauto using rightProjectionCombinatorCorrect.
-    eauto using subTermDenotes, rightProjectionCombinatorCorrect.
+    eauto using subtermDenotes, rightProjectionCombinatorCorrect.
   Qed.
+
+  (**
+  *** Combinators representing naturals
+  *)
+
+  Fixpoint natRepresentationCombinator `{_ : Pca} (n : nat) : term 0 :=
+  match n with
+  | O   => ι
+  | S n => π * κ * (natRepresentationCombinator n)
+  end.
+  Local Notation "# n" := (natRepresentationCombinator n) (at level 5).
 
   Lemma natRepresentationCombinatorDenotes {pca : Pca} (n : nat) : #n!.
   Proof.
@@ -429,11 +454,18 @@ Module PCA.
       apply pairingCombinatorDenotes''.
   Qed.
 
+  (**
+  *** Case combinator
+  *)
+
+  Definition caseCombinator {_ : Pca} : term 0 := λ (§π1 * x23 * x03 * x13).
+  Local Notation δ := caseCombinator.
+
   Lemma caseCombinatorCorrect0 {pca : Pca} (a b : pca) : δ*&a*&b*#0 ≃ &a.
   Proof.
     simpl. destruct identityCombinatorDenotes as [i Hi]. rewrite Hi.
     setoid_rewrite combinatoryCompletenessInstance3. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    setoid_rewrite closedTermSubstitutionEq0.
     setoid_rewrite combinatoryCompletenessInstance1. simpl.
     rewrite <- Hi, identityCombinatorCorrect'.
     apply kSpec.
@@ -443,7 +475,7 @@ Module PCA.
     δ*t*&b*#0 ≃ t.
   Proof.
     apply correctness2. intro a. split; intro H.
-    - assert (t!) as [a' Ht] by eauto 7 using subTermDenotes. rewrite Ht in *.
+    - assert (t!) as [a' Ht] by eauto 7 using subtermDenotes. rewrite Ht in *.
       rewrite caseCombinatorCorrect0 in H. exact H.
     - rewrite H. apply caseCombinatorCorrect0.
   Qed.
@@ -455,7 +487,7 @@ Module PCA.
       (natRepresentationCombinatorDenotes n) as [n' Hn],
       (natRepresentationCombinatorDenotes (S n)) as [Sn HSn].
     unfold δ. rewrite HSn, combinatoryCompletenessInstance3. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    setoid_rewrite closedTermSubstitutionEq0.
     rewrite <- HSn. simpl. rewrite Hn, leftProjectionCombinatorCorrect'.
     apply kAltCombinatorCorrect.
   Qed.
@@ -464,7 +496,7 @@ Module PCA.
     δ*&a*t*#(S x) ≃ t.
   Proof.
     apply correctness2. intro b. split; intro H.
-    - assert (t!) as [b' Ht] by eauto 7 using subTermDenotes. rewrite Ht in *.
+    - assert (t!) as [b' Ht] by eauto 7 using subtermDenotes. rewrite Ht in *.
       rewrite caseCombinatorCorrectS in H. exact H.
     - rewrite H. apply caseCombinatorCorrectS.
   Qed.
@@ -473,16 +505,23 @@ Module PCA.
   Proof.
     assert (δ*&a*&b*#0!) by eauto using caseCombinatorCorrect0.
     destruct (natRepresentationCombinatorDenotes 0) as [x Hx]. rewrite Hx in H.
-    eauto using subTermDenotes.
+    eauto using subtermDenotes.
   Qed.
 
   Lemma caseCombinatorDenotes' {pca : Pca} (a : pca) : δ*&a!.
   Proof.
-    pose proof (caseCombinatorDenotes'' a a). eauto using subTermDenotes.
+    pose proof (caseCombinatorDenotes'' a a). eauto using subtermDenotes.
   Qed.
 
   Lemma caseCombinatorDenotes {pca : Pca} : δ!.
-  Proof. pose proof (caseCombinatorDenotes' k). eauto using subTermDenotes. Qed.
+  Proof. pose proof (caseCombinatorDenotes' k). eauto using subtermDenotes. Qed.
+
+  (**
+  *** Successor combinator
+  *)
+
+  Definition successorCombinator {_ : Pca} : term 0 := π * κ.
+  Local Notation σ := successorCombinator.
 
   Lemma successorCombinatorCorrect {pca : Pca} (n : nat) : σ*#n ≃ #(S n).
   Proof. reflexivity. Qed.
@@ -495,8 +534,16 @@ Module PCA.
 
   Lemma successorCombinatorDenotes {pca : Pca} : σ!.
   Proof.
-    pose proof (successorCombinatorDenotes' 0). eauto using subTermDenotes.
+    pose proof (successorCombinatorDenotes' 0). eauto using subtermDenotes.
   Qed.
+
+  (**
+  *** Predecessor combinator
+  *)
+
+  Definition predecessorCombinator {_ : Pca} : term 0 :=
+    λ (§π1 * x01 * §#0 * §π2 * x01).
+  Local Notation ψ := predecessorCombinator.
 
   Lemma predecessorCombinatorCorrect0 {pca : Pca} : ψ*#0 ≃ #0.
   Proof.
@@ -506,7 +553,7 @@ Module PCA.
       rightProjectionCombinatorDenotes as [p2 Hp2].
     rewrite Hi.
     unfold ψ. rewrite combinatoryCompletenessInstance1. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    setoid_rewrite closedTermSubstitutionEq0.
     assert (π1*&i ≃ &k) as H. {
       unfold π1. rewrite combinatoryCompletenessInstance1. simpl. rewrite <- Hi.
       apply identityCombinatorCorrect.
@@ -522,7 +569,7 @@ Module PCA.
       (natRepresentationCombinatorDenotes (S n)) as [Sn HSn].
     rewrite Hn, HSn.
     unfold ψ. rewrite combinatoryCompletenessInstance1. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    rewrite closedTermSubstitutionEq0, closedTermSubstitutionEq0.
     rewrite <- HSn. simpl. rewrite Hn at 1.
     rewrite leftProjectionCombinatorCorrect'.
     destruct
@@ -544,10 +591,18 @@ Module PCA.
   Lemma predecessorCombinatorDenotes {pca : Pca} : ψ!.
   Proof. apply representationsDenote. Qed.
 
+  (**
+  *** Fixed point combinator
+  *)
+
+  Definition fixedPointCombinator {_ : Pca} : term 0 :=
+    let u := λ (x12*(x02*x02*x12)) in u*u.
+  Local Notation φ1 := fixedPointCombinator.
+
   Lemma fixedPointCombinatorCorrect {pca : Pca} (a : pca) : φ1*&a ≃ &a*(φ1*&a).
   Proof.
     unfold φ1 at 1. simpl.
-    set (u := x22*(x12*x12*x22)). unfold u at 1.
+    set (u := x12*(x02*x02*x12)). unfold u at 1.
     destruct (representationsDenote u) as [u' Hu].
     rewrite Hu, combinatoryCompletenessInstance2. simpl. rewrite <- Hu.
     reflexivity.
@@ -556,18 +611,26 @@ Module PCA.
   Lemma fixedPointCombinatorCorrect' {pca : Pca} (t : term 0) : φ1*t ≃ t*(φ1*t).
   Proof.
     apply correctness2. intro a. split; intro H.
-    - assert (t!) as [b Ht] by eauto using subTermDenotes.
+    - assert (t!) as [b Ht] by eauto using subtermDenotes.
       rewrite Ht, <- H in *. symmetry.
       apply fixedPointCombinatorCorrect.
-    - assert (t!) as [b Ht] by eauto using subTermDenotes.
+    - assert (t!) as [b Ht] by eauto using subtermDenotes.
       rewrite Ht, <- H in *.
       apply fixedPointCombinatorCorrect.
   Qed.
 
+  (**
+  *** Double fixed point combinator
+  *)
+
+  Definition doubleFixedPointCombinator {_ : Pca} : term 0 :=
+    let u := λ (x13*(x03*x03*x13)*x23) in u*u.
+  Local Notation φ2 := doubleFixedPointCombinator.
+
   Lemma doubleFixedPointCombinatorDenotes {pca : Pca} : φ2!.
   Proof.
     unfold φ2.
-    set (u := x23*(x13*x13*x23)*x33). unfold u at 1.
+    set (u := x13*(x03*x03*x13)*x23). unfold u at 1.
     destruct (representationsDenote u) as [u' Hu]. rewrite Hu. clear Hu.
     fold u. cutrewrite (λ u * &u' = λ u ** &&(();; u')); [ | reflexivity].
     apply representationsDenote''. reflexivity.
@@ -576,7 +639,7 @@ Module PCA.
   Lemma doubleFixedPointCombinatorDenotes' {pca : Pca} (a : pca) : φ2*&a!.
   Proof.
     unfold φ2.
-    set (u := x23*(x13*x13*x23)*x33). unfold u at 1.
+    set (u := x13*(x03*x03*x13)*x23). unfold u at 1.
     destruct (representationsDenote u) as [u' Hu].
     rewrite Hu. fold u.
     cutrewrite (λ u * &u' * &a = λ u ** &&(();; u';; a)); [ | reflexivity].
@@ -587,18 +650,30 @@ Module PCA.
     φ2*&a*&b ≃ &a*(φ2*&a)*&b.
   Proof.
     unfold φ2 at 1. simpl.
-    set (u := x23*(x13*x13*x23)*x33). unfold u at 1.
+    set (u := x13*(x03*x03*x13)*x23). unfold u at 1.
     destruct (representationsDenote u) as [u' Hu].
     rewrite Hu, combinatoryCompletenessInstance3. simpl. rewrite <- Hu.
     reflexivity.
   Qed.
 
-  Lemma primitiveRecursionCombinatorLemma {pca : Pca} (a b : pca) (x : nat) :
+  (**
+  *** Primitive recursion combinator
+  *)
+
+  Local Notation r' :=
+    (λ (x25 * (§ψ * x35) * (x05 * x15 * x25 * (§ψ * x35) * &k))).
+  Local Notation r :=
+    (λ (§δ * (&k * x14) * (§r' * x04 * x14 * x24 * x34) * x34)).
+  Definition primitiveRecursionCombinator {_ : Pca} : term 0 :=
+    λ (§φ2 * §r * x03 * x13 * x23 * &k).
+  Local Notation ρ := primitiveRecursionCombinator.
+
+  Lemma primitiveRecursionCombinatorEq {pca : Pca} (a b : pca) (x : nat) :
     ρ*&a*&b*#x ≃ δ*(&k*&a)*(r'*(φ2*r)*&a*&b*#x)*#x*&k.
   Proof.
     destruct (natRepresentationCombinatorDenotes x) as [x' Hx]. rewrite Hx.
     unfold ρ. rewrite combinatoryCompletenessInstance3. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    setoid_rewrite closedTermSubstitutionEq0.
     assert (r!) as Hr by eauto using representationsDenote.
     destruct Hr as [r'' Hr]. rewrite Hr.
     setoid_rewrite doubleFixedPointCombinatorCorrect.
@@ -606,12 +681,13 @@ Module PCA.
     setoid_rewrite Hφr.
     setoid_rewrite <- Hr.
     setoid_rewrite combinatoryCompletenessInstance4. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    rewrite closedTermSubstitutionEq0.
+    rewrite closedTermSubstitutionEq0.
     rewrite <- Hφr, <- Hr.
     reflexivity.
   Qed.
 
-  Lemma rDenotationLemma {pca : Pca} (a b : pca) (x : nat) :
+  Lemma rDenotes' {pca : Pca} (a b : pca) (x : nat) :
     r'*(φ2*r)*&a*&b*#x!.
   Proof.
     assert (r!) as [c Hc] by auto using representationsDenote.
@@ -627,8 +703,8 @@ Module PCA.
   Lemma primitiveRecursionCombinatorCorrect0 {pca : Pca} (a b : pca) :
     ρ*&a*&b*#0 ≃ &a.
   Proof.
-    rewrite primitiveRecursionCombinatorLemma.
-    destruct (rDenotationLemma a b 0) as [r'' Hr].
+    rewrite primitiveRecursionCombinatorEq.
+    destruct (rDenotes' a b 0) as [r'' Hr].
     rewrite Hr, caseCombinatorCorrect0', kSpec.
     reflexivity.
   Qed.
@@ -636,8 +712,8 @@ Module PCA.
   Lemma primitiveRecursionCombinatorCorrectS {pca : Pca} (a b : pca) (x : nat) :
     ρ*&a*&b*#(S x) ≃ &b*#x*(ρ*&a*&b*#x).
   Proof.
-    rewrite primitiveRecursionCombinatorLemma.
-    destruct (rDenotationLemma a b (S x)) as [r'' Hr''].
+    rewrite primitiveRecursionCombinatorEq.
+    destruct (rDenotes' a b (S x)) as [r'' Hr''].
     destruct (kaDenotes a) as [ka Hka].
     rewrite Hr'', Hka, caseCombinatorCorrectS', <- Hr''.
     assert (r!) as [r''' Hr'''] by eauto using representationsDenote.
@@ -646,11 +722,12 @@ Module PCA.
       (natRepresentationCombinatorDenotes (S x)) as [Sx HSx],
       (doubleFixedPointCombinatorDenotes' r''') as [φr Hφr].
     rewrite Hx, HSx, Hr''', Hφr, combinatoryCompletenessInstance5. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    setoid_rewrite closedTermSubstitutionEq0.
     rewrite <- HSx, predecessorCombinatorCorrect, <- Hφr, <- Hr'''. simpl.
     rewrite <- Minus.minus_n_O.
     unfold ρ. rewrite combinatoryCompletenessInstance3. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    rewrite closedTermSubstitutionEq0.
+    rewrite closedTermSubstitutionEq0.
     rewrite <- Hx.
     reflexivity.
   Qed.
@@ -668,8 +745,16 @@ Module PCA.
   Lemma primitiveRecursionCombinatorDenotes' {pca : Pca} (a : pca) : ρ*&a!.
   Proof.
     pose proof (primitiveRecursionCombinatorDenotes'' a a) as H.
-    eauto using subTermDenotes.
+    eauto using subtermDenotes.
   Qed.
+
+  (**
+  *** Addition combinator
+  *)
+
+  Definition additionCombinator {_ : Pca} : term 0 :=
+    λ (§ρ * x12 * (&k * §σ) * x02).
+  Local Notation α := additionCombinator.
 
   Lemma additionCombinatorCorrect {pca : Pca} (x y : nat) : α*#x*#y ≃ #(x + y).
   Proof.
@@ -680,7 +765,8 @@ Module PCA.
       successorCombinatorDenotes as [S HS].
     destruct (kaDenotes S) as [kS HkS].
     rewrite Hx, Hy, combinatoryCompletenessInstance2. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    rewrite closedTermSubstitutionEq0.
+    rewrite closedTermSubstitutionEq0.
     rewrite <- Hx, HS, HkS. clear x' Hx.
     induction x as [ | x IHx].
     - setoid_rewrite primitiveRecursionCombinatorCorrect0. rewrite <- Hy.
@@ -697,13 +783,21 @@ Module PCA.
       destruct (natRepresentationCombinatorDenotes (x + x)) as [xx Hxx].
       exists xx. rewrite additionCombinatorCorrect, <- Hxx. reflexivity.
     }
-    eauto using subTermDenotes.
+    eauto using subtermDenotes.
   Qed.
 
   Lemma additionCombinatorDenotes {pca : Pca} : α!.
   Proof.
-    pose proof (additionCombinatorDenotes' 0) as H. eauto using subTermDenotes.
+    pose proof (additionCombinatorDenotes' 0) as H. eauto using subtermDenotes.
   Qed.
+
+  (**
+  *** Multiplication combinator
+  *)
+
+  Definition multiplicationCombinator {_ : Pca} : term 0 :=
+    λ (§ρ * §#0 * (&k * (§α * x12)) * x02).
+  Local Notation μ := multiplicationCombinator.
 
   Lemma multiplicationCombinatorCorrect {pca : Pca} (x y : nat) :
     μ*#x*#y ≃ #(x * y).
@@ -714,7 +808,8 @@ Module PCA.
       (natRepresentationCombinatorDenotes y) as [y' Hy],
       (additionCombinatorDenotes' y) as [αy Hαy].
     rewrite Hx, Hy, combinatoryCompletenessInstance2. simpl.
-    setoid_rewrite closedTermSubstitutionLemma0.
+    rewrite closedTermSubstitutionEq0.
+    rewrite closedTermSubstitutionEq0.
     destruct (kaDenotes αy) as [kαy Hkαy], identityCombinatorDenotes as [i Hi].
     rewrite <- Hx, <- Hy, Hαy, Hkαy, Hi. clear x' Hx.
     induction x as [ | x IHx].
@@ -731,21 +826,61 @@ Module PCA.
       destruct (natRepresentationCombinatorDenotes (x * x)) as [xx Hxx].
       exists xx. rewrite multiplicationCombinatorCorrect, <- Hxx. reflexivity.
     }
-    eauto using subTermDenotes.
+    eauto using subtermDenotes.
   Qed.
 
   Lemma multiplicationCombinatorDenotes {pca : Pca} : μ!.
   Proof.
     pose proof (multiplicationCombinatorDenotes' 0) as H.
-    eauto using subTermDenotes.
+    eauto using subtermDenotes.
   Qed.
 
-  Lemma correctArithmetic {pca : Pca} (x y : nat) : x = y <-> #x ≃ #y.
-  Proof. (* TODO *) admit. Qed.
+  (**
+  ** Correct arithmetic
+  *)
+
+  Lemma correctArithmetic {pca : Pca} (x y : nat) :
+    NonTrivial pca -> #x ≃ #y -> x = y.
+  Proof.
+    rewrite <- ksDistinctIffNonTrivial. intro ksDistinct.
+    assert (forall x, ~ #(S x) ≃ #0) as H. {
+      clear x y. simpl. intros x H. apply ksDistinct.
+      destruct (natRepresentationCombinatorDenotes x) as [x' Hx'].
+      rewrite Hx' in H.
+      pose proof (leftProjectionCombinatorCorrect' κ x') as H'.
+      rewrite H in H'.
+      unfold π1 in H'.
+      destruct identityCombinatorDenotes as [i Hi]. rewrite Hi in H'.
+      rewrite combinatoryCompletenessInstance1 in H'. simpl in H'.
+      rewrite <- Hi, identityCombinatorCorrect in H'.
+      apply constInjective.
+      pose proof (kSpec k s) as H''.
+      rewrite H' in H'' at 1.
+      rewrite kAltCombinatorCorrect in H''.
+      symmetry in H''.
+      exact H''.
+    }
+    clear ksDistinct.
+    revert y. induction x as [ | x IHx].
+    - intro y. destruct y as [ | y]; [tauto | ].
+      intro H'. symmetry in H'. apply H in H'. contradiction.
+    - destruct y as [ | y].
+      + intro H'. apply H in H'. contradiction.
+      + simpl. intro H'.
+        destruct kAltCombinatorDenotes as [k' Hk']. rewrite Hk' in *.
+        pose proof (rightProjectionCombinatorCorrect' k' #x) as Hx.
+        pose proof (rightProjectionCombinatorCorrect' k' #y) as Hy.
+        rewrite <- H', Hx in Hy. rewrite (IHx _ Hy). reflexivity.
+  Qed.
+
+  Global Opaque ι λ κ π π1 π2 δ σ ψ φ1 φ2 ρ α μ natRepresentationCombinator.
+
+  (**
+  ** Notations
+  *)
 
   Module NOTATIONS.
     Delimit Scope PCA with PCA.
-
     Notation ι := ι.
     Notation λ := λ.
     Notation κ := κ.
@@ -763,12 +898,12 @@ Module PCA.
     Notation "# n" := #n : PCA.
   End NOTATIONS.
 
-  Global Opaque ι λ κ π π1 π2 δ σ ψ φ1 φ2 ρ α μ natRepresentationCombinator.
-
 End PCA.
 
+(**
+** Coercions
+*)
+
 Module PCA_COERCIONS.
-  Import PCA.
-  Import PAS.
-  Coercion pas : Pca >-> Pas.
+  Coercion PCA.pas : PCA.Pca >-> PAS.Pas.
 End PCA_COERCIONS.
