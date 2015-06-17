@@ -1,7 +1,7 @@
 (**
 * Some results on relation operators
 Taken from
-``Polishing up the Tait--Martin-Lof proof of the Church-Rosser theorem''
+``Polishing up the Tait--Martin-Lof proof of the Church--Rosser theorem''
 (Robert Pollack 1995).
 *)
 
