@@ -576,26 +576,16 @@ Module PCA_REL.
         split; [ | exists k; reflexivity].
         simpl. auto.
       - intros n A.
-        set (t := λ (§ρ * x03 * x13 * x23)).
-        exists (λ (n := n) §t). intro f.
+        exists (λ (n := n) §ρ). intro f.
         rewrite combinatoryCompleteness2.
         setoid_rewrite PAS.THMS.closedTermSubstitutionEq0.
-        split; [ apply PCA.THMS.representationsDenote | ].
+        split; [apply PCA.THMS.primitiveRecursionCombinatorDenotes | ].
         intros u Ha. destruct (realizersDenote Ha) as [a Hu]. rewrite Hu in *.
         clear dependent u.
-        split. {
-          apply PAS.THMS.subtermDenotes with (v := t*&a*&a); [auto | ].
-          cutrewrite (t * &a * &a  = t ** &&(();; a;; a)); [ | reflexivity].
-          apply PCA.THMS.combinatoryCompleteness1.
-        }
+        split; [apply PCA.THMS.primitiveRecursionCombinatorDenotes' | ].
         intros u Hb. destruct (realizersDenote Hb) as [b Hu]. rewrite Hu in *.
         clear dependent u.
         simpl. intro x.
-        destruct (PCA.THMS.natRepresentationCombinatorDenotes x) as [x' Hx].
-        rewrite Hx in *.
-        unfold t. rewrite PCA.THMS.combinatoryCompletenessInstance3. simpl.
-        setoid_rewrite PAS.THMS.closedTermSubstitutionEq0. rewrite <- Hx.
-        clear dependent x'.
         induction x as [ | x IHx].
         + setoid_rewrite PCA.THMS.primitiveRecursionCombinatorCorrect0.
           rewrite realizabilityDownSubstitution in Ha. exact Ha.
