@@ -2,8 +2,6 @@
 * Heyting arithmetic
 *)
 
-Require Import Coq.Setoids.Setoid.
-
 Require Import fin.
 Require Import vec.
 
@@ -16,7 +14,7 @@ Local Open Scope VEC.
 Module HA.
 
   (**
-  ** Syntax
+  ** Definitions
   *)
 
   (**
@@ -110,11 +108,7 @@ Module HA.
   Definition idVecUp {n} : VEC.t (term (S n)) n := VEC.finMap' (k := 1) var.
 
   (**
-  ** Substitution
-  *)
-
-  (**
-  *** Substitution in terms
+  *** Substitution in terms and formulas
   *)
 
   Fixpoint termSubst {n m} (t : term n) (f : VEC.t (term m) n) : term m :=
@@ -126,19 +120,11 @@ Module HA.
   | u ⋅ v => termSubst u f ⋅ termSubst v f
   end.
 
-  (**
-  *** Substitution in atoms
-  *)
-
   Definition atomSubst {n m} (A : atom n) (f : VEC.t (term m) n) : atom m :=
   match A with
   | FF    => FF
   | u ≐ v => termSubst u f ≐ termSubst v f
   end.
-
-  (**
-  *** Substitution in formulas
-  *)
 
   Fixpoint formulaSubst {n m} (A : formula n) (f : VEC.t (term m) n)
     : formula m :=
@@ -172,7 +158,7 @@ Module HA.
   Local Notation up := formulaUp.
 
   (**
-  ** Semantics
+  *** Semantics
   *)
 
   Class Interpretation (Truth : forall {n}, formula n -> Prop) := {
@@ -212,218 +198,13 @@ Module HA.
   }.
 
   (**
-  ** Standard interpretation
-  *)
-
-  (**
-  *** Standard term valuation
-  *)
-
-  Fixpoint standardVal {n} (t : term n) : VEC.t nat n -> nat :=
-  match t with
-  | O'     => fun _ => 0
-  | var x  => fun f => VEC.nth f x
-  | S' t   => fun f => S (standardVal t f)
-  | u ﬩ v  => fun f => standardVal u f + standardVal v f
-  | u ⋅ v  => fun f => standardVal u f * standardVal v f
-  end.
-
-  Definition standardVecVal {n m} (f : VEC.t (term m) n) (g : VEC.t nat m) :
-    VEC.t nat n := VEC.map (fun t => standardVal t g) f.
-
-  (**
-  *** Standard atomic truth
-  *)
-
-  Definition AtomicStandardTruthPred {n} (A : atom n) : VEC.t nat n -> Prop :=
-  match A with
-  | FF    => fun _ => False
-  | u ≐ v => fun f => (standardVal u f) = (standardVal v f)
-  end.
-
-  (**
-  *** Standard truth
-  *)
-
-  Fixpoint StandardTruthPred {n} (A : formula n) : VEC.t nat n -> Prop :=
-  match A with
-  | fAtom A => AtomicStandardTruthPred A
-  | A ∧ B   => fun f => StandardTruthPred A f /\ StandardTruthPred B f
-  | A ∨ B   => fun f => StandardTruthPred A f \/ StandardTruthPred B f
-  | A → B   => fun f => StandardTruthPred A f -> StandardTruthPred B f
-  | ∃A      => fun f => exists x : nat, StandardTruthPred A (f, x)
-  | ∀A      => fun f => forall x : nat, StandardTruthPred A (f, x)
-  end.
-
-  Definition StandardTruth {n} (A : formula n) : Prop :=
-    forall f : VEC.t nat n, StandardTruthPred A f.
-
-  Lemma standardVecValIdVecEq {n} (f : VEC.t nat n) :
-    standardVecVal idVec f = f.
-  Proof.
-    unfold idVec, standardVecVal. rewrite VEC.finMapComposeEq. simpl.
-    apply VEC.pointwiseEquality, VEC.nthFinMapEq.
-  Qed.
-
-  Lemma standardVecValIdVecUpEq {n} (f : VEC.t nat n) (x : nat) :
-    standardVecVal idVecUp (f, x) = f.
-  Proof.
-    unfold idVecUp, standardVecVal. rewrite VEC.finMapComposeEq'. simpl.
-    apply VEC.pointwiseEquality, VEC.nthFinMapEq.
-  Qed.
-
-  Lemma standardValTermUpEq {n} (t : term n) (f : VEC.t nat n) (x : nat) :
-    standardVal (termUp t) (f, x) = standardVal t f.
-  Proof.
-    induction t as [a | y | t IH | u IHu v IHv | u IHu v IHv]; simpl.
-    - reflexivity.
-    - reflexivity.
-    - rewrite IH. reflexivity.
-    - rewrite IHu, IHv. reflexivity.
-    - rewrite IHu, IHv. reflexivity.
-  Qed.
-
-  Lemma standardVecValTermVecUpEq {n m} (f : VEC.t (term m) n)
-                                  (g : VEC.t nat m) (x : nat) :
-    standardVecVal (termVecUp f) (g, x) = standardVecVal f g.
-  Proof.
-    setoid_rewrite VEC.mapComposeEq.
-    apply VEC.mapRespectful.
-    intro t. apply standardValTermUpEq.
-  Qed.
-
-  Lemma standardVecValTermVecUpEq' {n m} (f : VEC.t (term m) n)
-                                   (g : VEC.t nat m) (x : nat) :
-    standardVecVal (termVecUp f;; var FIN.last) (g;; x) =
-    (standardVecVal f g;; x).
-  Proof.
-    assert
-      (standardVecVal (termVecUp f;; var FIN.last) (g;; x) =
-       (standardVecVal (termVecUp f) (g;; x), x))
-    as H by reflexivity.
-    setoid_rewrite H. clear H.
-    rewrite standardVecValTermVecUpEq.
-    reflexivity.
-  Qed.
-
-  Lemma standardValTermSubstEq {n m} (t : term n) (f : VEC.t (term m) n)
-                               (g : VEC.t nat m) :
-    standardVal (termSubst t f) g = standardVal t (standardVecVal f g).
-  Proof.
-    induction t as [a | x | t IH | u IHu v IHv | u IHu v IHv]; simpl.
-    - reflexivity.
-    - unfold standardVecVal. rewrite VEC.nthMapEq. reflexivity.
-    - rewrite IH. reflexivity.
-    - rewrite IHu, IHv. reflexivity.
-    - rewrite IHu, IHv. reflexivity.
-  Qed.
-
-  Lemma atomicTruthSubstEq {n m} (A : atom n) (f : VEC.t (term m) n)
-                           (g : VEC.t nat m) :
-    AtomicStandardTruthPred (atomSubst A f) g <->
-    AtomicStandardTruthPred A (standardVecVal f g).
-  Proof.
-    destruct A as [ | u v]; simpl.
-    - tauto.
-    - setoid_rewrite standardValTermSubstEq. tauto.
-  Qed.
-
-  Lemma standardTruthSubstEq {n m} (A : formula n) (f : VEC.t (term m) n)
-                             (g : VEC.t nat m) :
-    StandardTruthPred (A // f) g <-> StandardTruthPred A (standardVecVal f g).
-  Proof.
-    generalize dependent m.
-    induction A as
-      [n A | n A IHA B IHB | n A IHA B IHB | n A IHA B IHB | n A IH | n A IH];
-      intros m f g; simpl.
-    - apply atomicTruthSubstEq.
-    - rewrite IHA, IHB. tauto.
-    - rewrite IHA, IHB. tauto.
-    - rewrite IHA, IHB. tauto.
-    - setoid_rewrite IH. setoid_rewrite standardVecValTermVecUpEq'. tauto.
-    - setoid_rewrite IH. setoid_rewrite standardVecValTermVecUpEq'. tauto.
-  Qed.
-
-  Lemma standardTruthLastSubstEq {n} (A : formula (S n)) (t : term (S n))
-                                 (f : VEC.t nat n) (x : nat) :
-    StandardTruthPred (A /+ t) (f, x) <->
-    StandardTruthPred A (f, standardVal t (f, x)).
-  Proof.
-    setoid_rewrite standardTruthSubstEq.
-    assert
-      (standardVecVal (idVecUp;; t) (f;; x) =
-       (standardVecVal idVecUp (f;; x));; standardVal t (f;; x))
-    as H by reflexivity.
-    setoid_rewrite H. clear H.
-    rewrite standardVecValIdVecUpEq.
-    tauto.
-  Qed.
-
-  Lemma standardTruthDownSubstEq {n} (A : formula (S n)) (t : term n)
-                                 (f : VEC.t nat n) :
-    StandardTruthPred (A /- t) f <-> StandardTruthPred A (f, standardVal t f).
-  Proof.
-    setoid_rewrite standardTruthSubstEq.
-    assert
-      (standardVecVal (idVec;; t) f = (standardVecVal idVec f, standardVal t f))
-    as H by reflexivity.
-    setoid_rewrite H. clear H.
-    rewrite standardVecValIdVecEq.
-    tauto.
-  Qed.
-
-  Lemma standardTruthUpEq {n} (A : formula n) (f : VEC.t nat n) (x : nat) :
-    StandardTruthPred (up A) (f, x) <-> StandardTruthPred A f.
-  Proof.
-    unfold up. rewrite standardTruthSubstEq, standardVecValIdVecUpEq. tauto.
-  Qed.
-
-  Instance standardModel : Interpretation (@StandardTruth).
-  Proof.
-    split; unfold StandardTruth; simpl.
-    - intro H. exact (H ()).
-    - firstorder.
-    - firstorder.
-    - intros n A H [f x]. apply standardTruthUpEq. apply H.
-    - tauto.
-    - tauto.
-    - tauto.
-    - tauto.
-    - tauto.
-    - tauto.
-    - tauto.
-    - tauto.
-    - tauto.
-    - setoid_rewrite standardTruthDownSubstEq. eauto.
-    - setoid_rewrite standardTruthUpEq. firstorder.
-    - setoid_rewrite standardTruthUpEq. firstorder.
-    - setoid_rewrite standardTruthDownSubstEq. auto.
-    - congruence.
-    - congruence.
-    - congruence.
-    - congruence.
-    - congruence.
-    - congruence.
-    - intros [_ x] H. eapply n_Sn. eauto.
-    - firstorder.
-    - firstorder.
-    - firstorder.
-    - firstorder.
-    - firstorder.
-    - intros n A f H IH.
-      rewrite standardTruthDownSubstEq in H.
-      setoid_rewrite standardTruthLastSubstEq in IH.
-      induction x as [ | x IHx].
-      + exact H.
-      + exact (IH x IHx).
-  Qed.
-
-  (**
   ** Notations
   *)
 
   Module NOTATIONS.
+
     Delimit Scope HA with HA.
+
     Infix "﬩" := plus' (at level 64) : HA.
     Infix "⋅" := mult' (at level 63) : HA.
     Infix "≐" := atomEq (at level 65) : HA.
@@ -438,6 +219,7 @@ Module HA.
     Infix "/+" := (fun A t => A/+t) (at level 62, left associativity) : HA.
     Infix "/-" := (fun A t => A/-t) (at level 62, left associativity) : HA.
     Notation up := (fun A => up A).
+
   End NOTATIONS.
 
 End HA.
@@ -446,6 +228,4 @@ End HA.
 ** Coercions
 *)
 
-Module HA_COERCIONS.
-  Coercion HA.fAtom : HA.atom >-> HA.formula.
-End HA_COERCIONS.
+Coercion HA.fAtom : HA.atom >-> HA.formula.
