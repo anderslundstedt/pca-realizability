@@ -142,7 +142,7 @@ Module KS_RW.
     *** Induction principle for eager reduction
     *)
 
-    Axiom eagerReductionInduction:
+    Axiom eagerReductionInduction :
       forall P : term -> term -> Prop,
       (forall U U' V : term, P U U' -> P (U⋅V) (U'⋅V)) ->
       (forall U V V' : term, SN U -> P V V' -> P (U⋅V) (U⋅V')) ->
