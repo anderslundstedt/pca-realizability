@@ -151,6 +151,28 @@ Module KS_RW.
       forall U V : term, U >> V -> P U V.
 
     (**
+    *** Induction principle for normal terms
+    *)
+
+    Axiom normalTermInduction :
+      forall P : term -> Prop,
+      P K ->
+      P S ->
+      (forall T : term, Normal T -> P T -> P (K⋅T)) ->
+      (forall T : term, Normal T -> P T -> P (S⋅T)) ->
+      (forall U V : term, Normal U -> Normal V -> P U -> P V -> P (S⋅U⋅V)) ->
+      forall T : term, Normal T -> P T.
+
+    Axiom strictlyNormalTermInduction :
+      forall P : term -> Prop,
+      P K ->
+      P S ->
+      (forall T : term, SN T -> P T -> P (K⋅T)) ->
+      (forall T : term, SN T -> P T -> P (S⋅T)) ->
+      (forall U V : term, SN U -> SN V -> P U -> P V -> P (S⋅U⋅V)) ->
+      forall T : term, SN T -> P T.
+
+    (**
     *** Relations between reduction relations
     *)
 
@@ -531,6 +553,63 @@ Module KS_RW.
     Theorem strictNormalForm_normalForm (U V : term) : SNF U V -> NF U V.
     Proof.
       firstorder using normalIffStrictlyNormal, eagerlyReduces_reduces.
+    Qed.
+
+    Theorem normalTermInduction (P : term -> Prop) :
+      P K ->
+      P S ->
+      (forall T : term, Normal T -> P T -> P (K⋅T)) ->
+      (forall T : term, Normal T -> P T -> P (S⋅T)) ->
+      (forall U V : term, Normal U -> Normal V -> P U -> P V -> P (S⋅U⋅V)) ->
+      forall T : term, Normal T -> P T.
+    Proof.
+      assert (forall T U V W, ~ Normal (T⋅U⋅V⋅W)) as lemma. {
+        clear. intro T.
+        induction T as [ | | U IHU V _].
+        - intros U V W H. apply H. exists (U⋅W). constructor. constructor.
+        - intros U V W H. apply H. eexists. constructor.
+        - intros W U' V' H. apply (IHU V W U'). eapply normalApplL. eauto.
+      }
+      intros HK HS HKU HSU HSUV T.
+      refine
+        ((fix IH T :=
+         match T as T' return (T = T' -> Normal T ->  P T) with
+         | K       => _
+         | S       => _
+         | K⋅T     => _
+         | S⋅T     => _
+         | K⋅U⋅V   => _
+         | S⋅U⋅V   => _
+         | _⋅_⋅_⋅_ => _
+         end _) T).
+      - intros H _. subst. apply HK.
+      - intros H _. subst. apply HS.
+      - intros H' H. subst.
+        pose proof (normalApplR _ _ H) as HV.
+        apply (HKU _ HV). apply (IH _ HV).
+      - intros H' H. subst.
+        pose proof (normalApplR _ _ H) as HV.
+        apply (HSU _ HV). apply (IH _ HV).
+      - intros H' H. subst. exfalso. apply H. exists U. constructor.
+      - intros H' H. subst.
+        pose proof (normalApplL _ _ H) as HU. apply normalApplR in HU.
+        pose proof (normalApplR _ _ H) as HV.
+        apply (HSUV _ _ HU HV).
+        + apply (IH _ HU).
+        + apply (IH _ HV).
+      - intros H' H. subst. exfalso. eapply lemma. eauto.
+      - reflexivity.
+    Qed.
+
+    Theorem strictlyNormalTermInduction (P : term -> Prop) :
+      P K ->
+      P S ->
+      (forall T : term, SN T -> P T -> P (K⋅T)) ->
+      (forall T : term, SN T -> P T -> P (S⋅T)) ->
+      (forall U V : term, SN U -> SN V -> P U -> P V -> P (S⋅U⋅V)) ->
+      forall T : term, SN T -> P T.
+    Proof.
+      setoid_rewrite <- normalIffStrictlyNormal. apply normalTermInduction.
     Qed.
 
     Theorem eagerReductionL (U U' V : term) : U >>* U' -> U⋅V >>* U'⋅V.
