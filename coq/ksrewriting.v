@@ -100,8 +100,7 @@ Module KS_RW.
 
     Delimit Scope KS_RW with KS_RW.
 
-    Infix "⋅" :=
-      (fun U V => U ⋅ V) (at level 40, left associativity) : KS_RW.
+    Infix "⋅" := appl : KS_RW.
     Infix ">" := (fun U V => U > V) (at level 70) : KS_RW.
     Infix ">*" := (fun U V => U >* V) (at level 70) : KS_RW.
     Infix ">>" := (fun U V => U >> V) (at level 70) : KS_RW.
