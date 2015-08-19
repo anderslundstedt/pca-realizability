@@ -9,9 +9,14 @@ Require Import Coq.Relations.Operators_Properties.
 Require Import Coq.Relations.Relation_Operators.
 Require Import Coq.Setoids.Setoid.
 
+Require Import pas.
+Require Import pca.
 Require Import rewriting.
 
+Import PAS.NOTATIONS.
 Import RW.NOTATIONS.
+
+Local Open Scope PAS.
 
 Module KS_RW.
 
@@ -28,6 +33,18 @@ Module KS_RW.
   | S    : term
   | appl : term -> term -> term.
   Local Infix "⋅" := appl (at level 40, left associativity).
+
+  (**
+  *** Terms to closed PCA terms
+  *)
+
+  Fixpoint termToClosedPcaTerm `{_ : PCA.Pca} (T : term) : PAS.term 0 :=
+  match T with
+  | K   => &k
+  | S   => &s
+  | U⋅V => termToClosedPcaTerm U * termToClosedPcaTerm V
+  end.
+  Local Notation "§ t" := (termToClosedPcaTerm t) (at level 6).
 
   (**
   *** Non-deterministic reduction
@@ -100,6 +117,7 @@ Module KS_RW.
 
     Delimit Scope KS_RW with KS_RW.
 
+    Notation "§ T" := (§T) (at level 6) : KS_RW.
     Infix "⋅" := appl : KS_RW.
     Infix ">" := (fun U V => U > V) (at level 70) : KS_RW.
     Infix ">*" := (fun U V => U >* V) (at level 70) : KS_RW.
@@ -285,6 +303,19 @@ Module KS_RW.
     Axiom kuvNotStrictlyNormal : forall U V : term, ~ SN (K⋅U⋅V).
 
     Axiom suvwNotStrictlyNormal : forall U V W : term, ~ SN (S⋅U⋅V⋅W).
+
+    (**
+    *** Normal terms denote in all PCAs
+    *)
+
+    Axiom normalTermsDenote : forall `{_ : PCA.Pca} (T : term), Normal T -> §T!.
+
+    (**
+    *** Relation between strict reduction and closed term equivalence in PCAs
+    *)
+
+    Axiom eagerlyReduces_closedTermEq :
+      forall `{_ : PCA.Pca} (U V : term), U >>* V -> §U ≃ §V.
 
   End THMS_SIG.
 
@@ -832,6 +863,35 @@ Module KS_RW.
     Proof.
       intros U U' [U'' [HU HU']] V V' [V'' [HV HV']]. exists (U''⋅V'').
       split; apply reductionPar; assumption.
+    Qed.
+
+    Theorem normalTermsDenote `{pca : PCA.Pca} (T : term) : Normal T -> §T!.
+    Proof.
+      revert T. apply normalTermInduction.
+      - exists k. reflexivity.
+      - exists s. reflexivity.
+      - intros U _ [a Ha]. simpl. rewrite Ha. apply PCA.THMS.kaDenotes.
+      - intros U _ [a Ha]. simpl. rewrite Ha. apply PCA.THMS.saDenotes.
+      - intros U V _ _ [a Ha] [b Hb]. simpl. rewrite Ha, Hb. apply PCA.sSpec1.
+    Qed.
+
+    Theorem eagerlyReduces_closedTermEq `{pca : PCA.Pca} (U V : term) :
+      U >>* V -> §U ≃ §V.
+    Proof.
+      intro H. apply clos_rt_rt1n in H.
+      induction H as [T | U V W HL _ IH]; [reflexivity | ].
+      rewrite <- IH. clear dependent W.
+      induction HL as [U U' V IH | U V V' H IH | U V HU HV | U V W _ _ _ ]
+        using eagerReductionInduction;
+      simpl.
+      - rewrite IH. reflexivity.
+      - rewrite IH. reflexivity.
+      - apply normalIffStrictlyNormal in HU.
+        apply normalIffStrictlyNormal in HV.
+        destruct
+          (normalTermsDenote _ HU) as [a Ha], (normalTermsDenote _ HV) as [b Hb].
+        rewrite Ha, Hb. apply PCA.kSpec.
+      - apply PCA.THMS.sSpec2'.
     Qed.
 
   End THMS.
