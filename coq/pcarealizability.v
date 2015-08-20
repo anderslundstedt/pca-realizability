@@ -119,7 +119,7 @@ Module PCA_REL.
       generalize dependent u.
       generalize dependent v.
       induction A as
-        [n A | n A IHA B IHB | n A IHA B IHB | n A IHA B IHB | n A IH | n A IH  ];
+        [n A | n A IHA B IHB | n A IHA B IHB | n A IHA B IHB | n A IH | n A IH];
       intros u v Huv; simpl.
       - unfold AtomicRealizability. rewrite Huv. tauto.
       - intros [HA HB]. split.
@@ -132,10 +132,12 @@ Module PCA_REL.
       - intros [[H H'] | [H H']].
         + left. split.
           * rewrite <- Huv. exact H.
-          * apply (IHA f (π2*u) (π2*v)); [ | exact H']. rewrite Huv. reflexivity.
+          * apply (IHA f (π2*u) (π2*v)); [ | exact H']. rewrite Huv.
+            reflexivity.
         + right. split.
           * rewrite <- Huv. exact H.
-          * apply (IHB f (π2*u) (π2*v)); [ | exact H']. rewrite Huv. reflexivity.
+          * apply (IHB f (π2*u) (π2*v)); [ | exact H']. rewrite Huv.
+            reflexivity.
       - intros [Hv H]. split; [rewrite <- Huv; exact Hv | ].
         intros w Hw. specialize (H w Hw). apply IHB with (u := v*w).
         + rewrite Huv. reflexivity.

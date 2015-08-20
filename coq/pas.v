@@ -482,7 +482,8 @@ Module PAS.
     Proof. unfold product. rewrite VEC.THMS.foldlConcatEq. reflexivity. Qed.
 
     Theorem productSubstitutionEq `{pas : Pas} {n m k} (t : term m)
-                                  (f : VEC.t (term m) n) (g : VEC.t (term k) m) :
+                                  (f : VEC.t (term m) n)
+                                  (g : VEC.t (term k) m) :
       (t ** f) / g = (t/g) ** (termVecSubst f g).
     Proof.
       induction n as [ | n IHn].

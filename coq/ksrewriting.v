@@ -889,7 +889,8 @@ Module KS_RW.
       - apply normalIffStrictlyNormal in HU.
         apply normalIffStrictlyNormal in HV.
         destruct
-          (normalTermsDenote _ HU) as [a Ha], (normalTermsDenote _ HV) as [b Hb].
+          (normalTermsDenote _ HU) as [a Ha],
+          (normalTermsDenote _ HV) as [b Hb].
         rewrite Ha, Hb. apply PCA.kSpec.
       - apply PCA.THMS.sSpec2'.
     Qed.

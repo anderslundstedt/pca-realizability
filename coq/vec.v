@@ -322,7 +322,8 @@ Module VEC.
       - destruct v as [v a]. simpl. rewrite IHn. reflexivity.
     Qed.
 
-    Theorem mapConcatEq {A B} {n m} (f : A -> B) (v : VEC.t A n) (w : VEC.t A m) :
+    Theorem mapConcatEq {A B} {n m} (f : A -> B) (v : VEC.t A n)
+                        (w : VEC.t A m) :
       map f (concat v w) = concat (map f v) (map f w).
     Proof.
       induction m as [ | m IHm]; simpl.

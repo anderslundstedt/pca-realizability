@@ -146,7 +146,8 @@ Module RW.
 
   Module THMS : THMS_SIG.
 
-    Theorem rtcExtensive {A} (R : A -> A -> Prop) (a b : A) : R a b -> RTC R a b.
+    Theorem rtcExtensive {A} (R : A -> A -> Prop) (a b : A) :
+      R a b -> RTC R a b.
     Proof. auto using rt_step. Qed.
 
     Theorem rtcIncreasing {A} (R S : A -> A -> Prop) :
